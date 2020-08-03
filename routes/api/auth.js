@@ -2,29 +2,28 @@ const express = require("express");
 const router = express.Router();
 const bcrypt = require("bcryptjs");
 const auth = require("../../middleware/auth");
-const User = require("../../models/User");
 const jwt = require("jsonwebtoken");
 const config = require("config");
 const { check, validationResult } = require("express-validator");
 
-// @route  GET api/auth
-// @desc   Test route
-// @access Public
+const User = require("../../models/User");
+
+// @route    GET api/auth
+// @desc     Get user by token
+// @access   Private
 router.get("/", auth, async (req, res) => {
   try {
-    const user = await (await User.findById(req.user.id)).isSelected(
-      "-password"
-    );
+    const user = await User.findById(req.user.id).select("-password");
     res.json(user);
-  } catch (error) {
+  } catch (err) {
     console.error(err.message);
     res.status(500).send("Server Error");
   }
 });
 
-// @route POST api/auth
-// @desc Authenticate user & get token
-// @access public
+// @route    POST api/auth
+// @desc     Authenticate user & get token
+// @access   Public
 router.post(
   "/",
   [
@@ -38,25 +37,24 @@ router.post(
     }
 
     const { email, password } = req.body;
+
     try {
-      // See if user exists
       let user = await User.findOne({ email });
+
       if (!user) {
         return res
           .status(400)
           .json({ errors: [{ msg: "Invalid Credentials" }] });
       }
-      // It's a better option to always return "Invalid Credentials" as an error message in the response, because sending a message
-      // like "user does not exist" gives information to whoever is trying to access details of a particular account
-      // to determine if the user at LEAST exists. Nobody else needs to have that information but the user.
+
       const isMatch = await bcrypt.compare(password, user.password);
+
       if (!isMatch) {
         return res
           .status(400)
           .json({ errors: [{ msg: "Invalid Credentials" }] });
       }
 
-      // Return jsonwebtoken
       const payload = {
         user: {
           id: user.id,
@@ -74,7 +72,7 @@ router.post(
       );
     } catch (err) {
       console.error(err.message);
-      res.status(500).send("Server Error");
+      res.status(500).send("Server error");
     }
   }
 );

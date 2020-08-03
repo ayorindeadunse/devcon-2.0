@@ -1,56 +1,41 @@
 import React, { Fragment, useState } from "react";
-import { Link } from "react-router-dom";
+import { connect } from "react-redux";
+import { Link, Redirect } from "react-router-dom";
+import { setAlert } from "../../actions/alert";
+import { register } from "../../actions/auth";
+import PropTypes from "prop-types";
 
-export const Register = () => {
-  // formData is our state, an object with the field values, while setFormData is the function used to update the state
+const Register = ({ setAlert, register, isAuthenticated }) => {
   const [formData, setFormData] = useState({
-    name: "", //initial state of name all the way through password2
+    name: "",
     email: "",
     password: "",
     password2: "",
   });
 
-  // pull form data by destructuring
   const { name, email, password, password2 } = formData;
-  const onChange = (e) =>
-    setFormData({
-      // change state of form fields
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
 
-  //on submit
+  const onChange = (e) =>
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+
   const onSubmit = async (e) => {
     e.preventDefault();
     if (password !== password2) {
-      console.log("Passwords do not match");
+      setAlert("Passwords do not match", "danger");
     } else {
-      console.log("SUCCESS");
-      // posting using axios, not redux...
-      /* const newUser = {
-        name,
-        email,
-        password,
-      };
-      try {
-        const config = {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        };
-        const body = JSON.stringify(newUser);
-        const res = await axios.post("/api/users", body, config);
-        console.log(res.data);
-      } catch (err) {
-        console.error(err.res.data);
-      }*/
+      register({ name, email, password });
     }
   };
+
+  if (isAuthenticated) {
+    return <Redirect to='/dashboard' />;
+  }
+
   return (
     <Fragment>
       <h1 className='large text-primary'>Sign Up</h1>
       <p className='lead'>
-        <i className='fas fa-user'></i> Create Your Account
+        <i className='fas fa-user' /> Create Your Account
       </p>
       <form className='form' onSubmit={(e) => onSubmit(e)}>
         <div className='form-group'>
@@ -60,7 +45,6 @@ export const Register = () => {
             name='name'
             value={name}
             onChange={(e) => onChange(e)}
-            required
           />
         </div>
         <div className='form-group'>
@@ -70,7 +54,6 @@ export const Register = () => {
             name='email'
             value={email}
             onChange={(e) => onChange(e)}
-            required
           />
           <small className='form-text'>
             This site uses Gravatar so if you want a profile image, use a
@@ -84,8 +67,6 @@ export const Register = () => {
             name='password'
             value={password}
             onChange={(e) => onChange(e)}
-            required
-            minLength='6'
           />
         </div>
         <div className='form-group'>
@@ -95,8 +76,6 @@ export const Register = () => {
             name='password2'
             value={password2}
             onChange={(e) => onChange(e)}
-            required
-            minLength='6'
           />
         </div>
         <input type='submit' className='btn btn-primary' value='Register' />
@@ -108,4 +87,14 @@ export const Register = () => {
   );
 };
 
-export default Register;
+Register.propTypes = {
+  setAlert: PropTypes.func.isRequired,
+  register: PropTypes.func.isRequired,
+  isAuthenticated: PropTypes.bool,
+};
+
+const mapStateToProps = (state) => ({
+  isAuthenticated: state.auth.isAuthenticated,
+});
+
+export default connect(mapStateToProps, { setAlert, register })(Register);
